@@ -1,1 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>7 分鐘 AI 教練 (成就增強版)</title>
+    <style>
+        :root {
+            --primary-color: #ff4757; 
+            --rest-color: #2ed573;    
+            --prep-color: #eccc68;
+            --bg-color: #1e2227;
+            --card-bg: #2c313a;
+            --text-color: #ffffff;
+            --accent-color: #ffa502;
+        }
+
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px 0;
+        }
+
+        #app {
+            width: 90%;
+            max-width: 450px;
+            padding: 30px 20px;
+            border-radius: 30px;
+            background: var(--card-bg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            position: relative;
+        }
+
+        /* 頂部資訊 */
+        .top-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .level-badge {
+            background: var(--accent-color);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+
+        /* 計時器區域 */
+        #status-label {
+            font-size: 1rem;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        #timer-display {
+            font-size: 7.5rem;
+            font-weight: 800;
+            margin: 5px 0;
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        #exercise-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            height: 2.8rem;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        #next-tip {
+            font-size: 1rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            height: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* 進度條 */
+        #progress-container {
+            width: 100%;
+            height: 12px;
+            background-color: #3d4450;
+            border-radius: 6px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            transition: width 0.2s linear;
+        }
+
+        /* 成就區塊 */
+        .achievement-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
+        }
+
+        .achievement-grid {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .badge {
+            width: 45px;
+            height: 45px;
+            background: #3d4450;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            opacity: 0.2;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .badge.unlocked {
+            opacity: 1;
+            background: var(--accent-color);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 165, 2, 0.4);
+        }
+
+        /* 控制按鈕 */
+        .main-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .row-controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn {
+            border: none;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-start { background: #fff; color: #2f3542; width: 100%; max-width: 280px; }
+        .btn-pause { background: var(--accent-color); color: #fff; flex: 1; }
+        .btn-next { background: rgba(255,255,255,0.1); color: #fff; flex: 1; }
+        .btn-reset { background: var(--primary-color); color: #fff; width: 120px; font-size: 0.8rem; padding: 10px; }
+        
+        .hidden { display: none !important; }
+
+        /* 紀錄列表 */
+        #record-section {
+            margin-top: 25px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 15px;
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0 0 0;
+            font-size: 0.85rem;
+        }
+
+        .history-item {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            color: #ced6e0;
+        }
+
+        /* 狀態顏色 */
+        .status-workout { background-color: var(--primary-color); }
+        .status-rest { background-color: var(--rest-color); }
+        .status-prep { background-color: var(--prep-color); color: #2f3542 !important; }
+        .timer-workout { color: var(--primary-color); }
+        .timer-rest { color: var(--rest-color); }
+        .timer-prep { color: var(--prep-color); }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <div class="top-info">
+            <div id="level-display" class="level-badge">LV.1 健身新手</div>
+            <button class="btn" style="background:transparent; color:#888; font-size:0.7rem;" onclick="toggleFullScreen()">[全螢幕]</button>
+        </div>
+
+        <div id="status-area">
+            <span id="status-label" class="status-prep">READY</span>
+        </div>
+        
+        <div id="timer-display">--</div>
+        
+        <div id="exercise-name">7分鐘 AI 挑戰</div>
+        <div id="next-tip">點擊開始運動</div>
+
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+
+        <div class="achievement-section">
+            <div style="font-size:0.7rem; color:#888;">成就勳章 (點擊查看)</div>
+            <div id="achievement-grid" class="achievement-grid"></div>
+        </div>
+
+        <div class="main-controls">
+            <button id="start-btn" class="btn btn-start" onclick="handleStart()">開始訓練</button>
+            <div id="active-controls" class="row-controls hidden">
+                <button id="pause-btn" class="btn btn-pause" onclick="togglePause()">暫停</button>
+                <button id="next-btn" class="btn btn-next" onclick="handleSkip()">跳過</button>
+            </div>
+            <button id="reset-btn" class="btn btn-reset hidden" onclick="handleReset()">放棄進度</button>
+        </div>
+
+        <div id="record-section">
+            <div style="display:flex; justify-content:space-between; color:#888; font-size:0.8rem;">
+                <span>最近紀錄</span>
+                <span onclick="clearHistory()" style="cursor:pointer;">清除</span>
+            </div>
+            <ul id="history-list" class="history-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        // 設定與資料
+        const exercises = ["開合跳", "靠牆蹲", "伏地挺身", "仰臥起坐", "波比跳", "深蹲", "跪姿伏地挺身", "平板支撐", "原地高抬腿", "弓步蹲", "伏地挺身旋轉", "側平板支撐"];
+        const ACHIEVEMENTS = [
+            { id: 'first', name: '踏出第一步', desc: '完成首次 7 分鐘訓練', icon: '🌱' },
+            { id: 'pro', name: '漸入佳境', desc: '累計完成 5 次訓練', icon: '🔥' },
+            { id: 'night', name: '夜貓戰士', desc: '在晚上 10 點後運動', icon: '🦉' },
+            { id: 'morning', name: '晨之美', desc: '在早上 4 點至 8 點運動', icon: '☀️' },
+            { id: 'master', name: '運動大師', desc: '累計完成 20 次訓練', icon: '🏆' }
+        ];
+
+        const WORKOUT_TIME = 30; 
+        const REST_TIME = 10;
+        const INITIAL_PREP = 10;
+
+        let currentIdx = 0;
+        let state = "READY"; 
+        let timeLeft = 0;
+        let timerInterval = null;
+        let isPaused = false;
+        let wakeLock = null;
+
+        // 讀取本地儲存數據
+        let historyData = JSON.parse(localStorage.getItem('7min_history')) || [];
+        let userStats = JSON.parse(localStorage.getItem('7min_stats')) || { totalCount: 0, unlocked: [] };
+
+        const synth = window.speechSynthesis;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // 初始化頁面
+        updateHistoryUI();
+        updateAchievementUI();
+        updateLevel();
+
+        // 語音功能
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'zh-TW';
+            utter.rate = 1.2;
+            synth.speak(utter);
+        }
+
+        // 嗶聲功能
+        function playBeep(f, d) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.frequency.value = f;
+                g.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                o.start(); o.stop(audioCtx.currentTime + d);
+            } catch(e) {}
+        }
+
+        // 成就與等級邏輯
+        function updateLevel() {
+            const levelEl = document.getElementById('level-display');
+            const count = userStats.totalCount;
+            let title = "健身新手";
+            if(count >= 5) title = "運動愛好者";
+            if(count >= 15) title = "核心強者";
+            if(count >= 30) title = "肌肉狂人";
+            levelEl.innerText = `LV.${count + 1} ${title}`;
+        }
+
+        function updateAchievementUI() {
+            const grid = document.getElementById('achievement-grid');
+            grid.innerHTML = '';
+            ACHIEVEMENTS.forEach(ach => {
+                const isUnlocked = userStats.unlocked.includes(ach.id);
+                const div = document.createElement('div');
+                div.className = `badge ${isUnlocked ? 'unlocked' : ''}`;
+                div.innerHTML = ach.icon;
+                div.onclick = () => alert(`${ach.icon} ${ach.name}\n${ach.desc}\n狀態：${isUnlocked ? '✅ 已解鎖' : '🔒 未達成'}`);
+                grid.appendChild(div);
+            });
+        }
+
+        function checkAchievements() {
+            const now = new Date();
+            const hour = now.getHours();
+            let newlyUnlocked = [];
+
+            const trigger = (id) => {
+                if (!userStats.unlocked.includes(id)) {
+                    userStats.unlocked.push(id);
+                    newlyUnlocked.push(id);
+                }
+            };
+
+            trigger('first');
+            if (userStats.totalCount >= 5) trigger('pro');
+            if (userStats.totalCount >= 20) trigger('master');
+            if (hour >= 22 || hour <= 3) trigger('night');
+            if (hour >= 4 && hour <= 8) trigger('morning');
+
+            if (newlyUnlocked.length > 0) {
+                localStorage.setItem('7min_stats', JSON.stringify(userStats));
+                updateAchievementUI();
+                setTimeout(() => {
+                    speak("恭喜獲得新成就！");
+                    alert("🎊 獲得新勳章！請查看成就欄");
+                }, 1000);
+            }
+        }
+
+        // 流程控制
+        async function handleStart() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (err) {}
+            
+            document.getElementById('start-btn').classList.add('hidden');
+            document.getElementById('active-controls').classList.remove('hidden');
+            document.getElementById('reset-btn').classList.remove('hidden');
+            
+            state = "PREP";
+            timeLeft = INITIAL_PREP;
+            currentIdx = 0;
+            updateUI();
+            startTimerLoop();
+            speak("準備運動，第一個動作，" + exercises[0]);
+        }
+
+        function startTimerLoop() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isPaused) return;
+                
+                document.getElementById('timer-display').innerText = timeLeft;
+                let total = state === "PREP" ? INITIAL_PREP : (state === "WORKOUT" ? WORKOUT_TIME : REST_TIME);
+                document.getElementById('progress-bar').style.width = ((total - timeLeft) / total * 100) + '%';
+
+                if (timeLeft <= 3 && timeLeft > 0) {
+                    playBeep(800, 0.1);
+                    speak(timeLeft.toString());
+                }
+
+                if (timeLeft <= 0) {
+                    playBeep(1200, 0.3);
+                    nextState();
+                } else {
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+
+        function nextState() {
+            if (state === "PREP") {
+                state = "WORKOUT";
+                timeLeft = WORKOUT_TIME;
+                speak(exercises[currentIdx] + "，開始");
+            } else if (state === "WORKOUT") {
+                currentIdx++;
+                if (currentIdx >= exercises.length) return finish();
+                state = "REST";
+                timeLeft = REST_TIME;
+                speak("休息時間。下一個：" + exercises[currentIdx]);
+            } else if (state === "REST") {
+                state = "WORKOUT";
+                timeLeft = WORKOUT_TIME;
+                speak(exercises[currentIdx] + "，開始");
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            const label = document.getElementById('status-label');
+            const timer = document.getElementById('timer-display');
+            const bar = document.getElementById('progress-bar');
+            const name = document.getElementById('exercise-name');
+            const tip = document.getElementById('next-tip');
+            
+            label.className = `status-${state.toLowerCase()}`;
+            timer.className = `timer-${state.toLowerCase()}`;
+            bar.className = `status-${state.toLowerCase()}`;
+
+            if (state === "PREP") {
+                label.innerText = "準備";
+                name.innerText = "即將開始";
+                tip.innerText = "下一個：" + exercises[0];
+            } else if (state === "WORKOUT") {
+                label.innerText = "運動中";
+                name.innerText = exercises[currentIdx];
+                tip.innerText = (currentIdx + 1 < exercises.length) ? "待會休息" : "最後一項！";
+            } else {
+                label.innerText = "休息";
+                name.innerText = "休息時間";
+                tip.innerText = "下一個：" + exercises[currentIdx];
+            }
+        }
+
+        function finish() {
+            clearInterval(timerInterval);
+            if (wakeLock) wakeLock.release();
+            
+            // 紀錄數據
+            userStats.totalCount++;
+            localStorage.setItem('7min_stats', JSON.stringify(userStats));
+            
+            const now = new Date();
+            const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+            historyData.unshift(timeStr);
+            if(historyData.length > 5) historyData.pop();
+            localStorage.setItem('7min_history', JSON.stringify(historyData));
+            
+            // 更新 UI
+            updateHistoryUI();
+            updateLevel();
+            checkAchievements();
+            
+            speak("訓練完成，做得太棒了！");
+            document.getElementById('status-label').innerText = "DONE";
+            document.getElementById('timer-display').innerText = "💪";
+            document.getElementById('exercise-name').innerText = "訓練成功！";
+            document.getElementById('next-tip').innerText = "明天也要繼續喔！";
+            document.getElementById('active-controls').classList.add('hidden');
+            document.getElementById('reset-btn').classList.add('hidden');
+            document.getElementById('start-btn').classList.remove('hidden');
+            document.getElementById('start-btn').innerText = "再次挑戰";
+            state = "READY";
+        }
+
+        // 輔助功能
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pause-btn');
+            btn.innerText = isPaused ? "繼續" : "暫停";
+            if (isPaused) synth.cancel();
+        }
+
+        function handleSkip() {
+            timeLeft = 0;
+        }
+
+        function handleReset() {
+            if (confirm("確定要放棄目前進度嗎？")) location.reload();
+        }
+
+        function updateHistoryUI() {
+            const listEl = document.getElementById('history-list');
+            listEl.innerHTML = historyData.map((item, i) => `
+                <li class="history-item">
+                    <span>#${historyData.length - i}</span>
+                    <span>${item}</span>
+                </li>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if (confirm("要重置所有數據嗎？")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+    </script>
+</body>
+</html>
 
